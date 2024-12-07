@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import bcryptjs from "bcryptjs";
+import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema({
     fullName:{
@@ -31,18 +31,23 @@ const userSchema = new mongoose.Schema({
     },  
 })
 
-userSchema.method.generateAuthToke = function(){
-    const token = jwt.sign({_id: this._id }, process.env.JWT_SECRET);
-    return token;
+userSchema.methods.generateAuthToken = function() {
+    try {
+        const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        return token;
+    } catch (error) {
+        console.error('Error generating token:', error);
+        throw new Error('Token generation failed');
+    }
 }
 
 userSchema.statics.hashPassword = async function (password) {
-    const salt = bcryptjs.genSalt(10);
-    return bcryptjs.hash(password, salt);
+    const salt = bcrypt.genSalt(10);
+    return bcrypt.hash(password, salt);
 }
 
-userSchema.method.comparePassword = async function(password){
-    return await bcryptjs.compare(password, this.password);
+userSchema.methods.comparePassword = async function(password){
+    return await bcrypt.compare(password, this.password);
 }
 
 const User = mongoose.model("User", userSchema);
